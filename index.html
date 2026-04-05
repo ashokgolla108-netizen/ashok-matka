@@ -3,26 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ashok Matka - Login</title>
+    <title>Village45 - Secure Login</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5; margin: 0; }
-        .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 320px; }
-        h2 { color: #d32f2f; margin-bottom: 25px; letter-spacing: 1px; }
-        input { margin: 10px 0; padding: 14px; width: 100%; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .btn-main { background: #d32f2f; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-sub { background: #f8f9fa; color: #666; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; margin-top: 10px; font-size: 13px; }
-        #message { margin-top: 15px; color: #d32f2f; font-size: 13px; min-height: 18px; }
+        :root {
+            --primary: #d32f2f;
+            --primary-dark: #b71c1c;
+            --bg: #f8f9fa;
+            --text: #212121;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .brand-logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .auth-subtitle {
+            color: #757575;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #444;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1.5px solid #eee;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.1);
+        }
+
+        .forgot-container {
+            text-align: right;
+            margin-bottom: 20px;
+            margin-top: -10px;
+        }
+
+        #btnForgot {
+            color: #757575;
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #btnForgot:hover { color: var(--primary); text-decoration: underline; }
+
+        .btn-auth {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-auth:hover { background: var(--primary-dark); }
+        .btn-auth:disabled { background: #ccc; cursor: not-allowed; }
+
+        .toggle-text { margin-top: 20px; font-size: 14px; color: #666; }
+        .toggle-link { color: var(--primary); font-weight: 700; cursor: pointer; }
+
+        #message {
+            margin-top: 15px;
+            font-size: 13px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .error-msg { background: #ffebee; color: #c62828; display: block !important; border: 1px solid #ffcdd2; }
+        .info-msg { background: #e3f2fd; color: #0d47a1; display: block !important; border: 1px solid #bbdefb; }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <h2>ASHOK MATKA</h2>
-        <input type="email" id="email" placeholder="Email Address">
-        <input type="password" id="password" placeholder="Password">
-        <button class="btn-main" id="btnLogin">LOGIN</button>
-        <button class="btn-sub" id="btnSignup">Create New Account</button>
-        <p id="message"></p>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <span class="brand-logo">VILLAGE45</span>
+        <div class="auth-subtitle" id="authSubtitle">Login to your account</div>
+
+        <div id="signupExtra" style="display: none;">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="regName" placeholder="Enter your name">
+            </div>
+            <div class="input-group">
+                <label>Mobile Number</label>
+                <input type="tel" id="regMobile" placeholder="10-digit number">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="name@example.com">
+        </div>
+
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+
+        <div class="forgot-container" id="forgotWrapper">
+            <a href="javascript:void(0)" id="btnForgot">Forgot Password?</a>
+        </div>
+
+        <button class="btn-auth" id="btnSubmit">Login</button>
+        
+        <div id="message"></div>
+
+        <div class="toggle-text">
+            <span id="toggleQuestion">Don't have an account?</span> 
+            <span class="toggle-link" id="toggleMode">Sign Up</span>
+        </div>
     </div>
-    <script type="module" src="auth.js"></script>
+</div>
+
+<script type="module" src="Auth.js"></script>
 </body>
 </html>
