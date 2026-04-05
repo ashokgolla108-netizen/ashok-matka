@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Ashok Matka</title>
+    <style>
+        :root { --red: #d32f2f; --green: #2e7d32; --blue: #1976d2; --dark: #212121; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: #fff; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: left; }
+        .btn { border: none; padding: 8px 12px; border-radius: 6px; color: white; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .btn-green { background: var(--green); } .btn-red { background: var(--red); }
+        select, input { padding: 10px; border-radius: 6px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+
+<div class="grid">
+    <div class="stat-box">Total Volume<br><b id="vSum" style="font-size:24px; color:var(--blue);">₹0</b></div>
+    <div class="stat-box">Net P&L<br><b id="pSum" style="font-size:24px; color:var(--green);">₹0</b></div>
+</div>
+
+<div class="card">
+    <h3>Market Settle</h3>
+    <select id="mSel">
+        <option value="">-- Market --</option>
+        <option>KALYAN</option><option>MAIN BAZAR</option> </select>
+    <input id="mRes" placeholder="Result (e.g. 57)">
+    <button onclick="settle()" class="btn btn-red">SETTLE</button>
+</div>
+
+<div class="card">
+    <h3>Approvals</h3>
+    <table>
+        <thead><tr><th>User</th><th>Type</th><th>Details</th><th>Action</th></tr></thead>
+        <tbody id="reqBody"></tbody>
+    </table>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, update, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDdgGqtcgvYoXmpjdIvmjlq3AkLKb5cOw0",
+        authDomain: "matkaapp-267b4.firebaseapp.com",
+        databaseURL: "https://matkaapp-267b4-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "matkaapp-267b4"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user || user.email !== "gollaashok64@gmail.com") window.location.href = "index.html";
+    });
+
+    onValue(ref(db, 'bets'), (snap) => {
+        let v = 0, p = 0;
+        if(snap.exists()) Object.values(snap.val()).forEach(b => {
+            v += b.amt;
+            if(b.status === 'Loss') p += b.amt;
+            if(b.status === 'Won') p -= (b.payout - b.amt);
+        });
+        document.getElementById('vSum').innerText = "₹" + v;
+        document.getElementById('pSum').innerText = "₹" + p;
+    });
+
+    onValue(ref(db, 'deposits'), (d) => {
+        onValue(ref(db, 'withdrawals'), (w) => {
+            const body = document.getElementById('reqBody'); body.innerHTML = "";
+            const deps = d.val() || {}; const wits = w.val() || {};
+            Object.keys(deps).forEach(k => {
+                if(deps[k].status === 'Pending') body.innerHTML += `<tr><td>${deps[k].uid}</td><td>DEP</td><td>₹${deps[k].amount}</td><td><button class="btn btn-green" onclick="appDep('${k}','${deps[k].uid}',${deps[k].amount})">Approve</button></td></tr>`;
+            });
+            Object.keys(wits).forEach(k => {
+                if(wits[k].status === 'Pending') body.innerHTML += `<tr><td>${wits[k].uid}</td><td>WIT</td><td>₹${wits[k].amount}</td><td><button class="btn btn-green" onclick="appWit('${k}')">Success</button></td></tr>`;
+            });
+        });
+    });
+
+    window.appDep = async (k, u, a) => {
+        const s = await get(ref(db, `users/${u}/balance`));
+        await set(ref(db, `users/${u}/balance`), (Number(s.val())||0)+a);
+        await update(ref(db, `deposits/${k}`), { status: 'Approved' });
+    };
+
+    window.appWit = (k) => update(ref(db, `withdrawals/${k}`), { status: 'Success' });
+
+    window.settle = async () => {
+        const m = document.getElementById('mSel').value;
+        const r = document.getElementById('mRes').value.trim();
+        if(!m || !r) return alert("Select Market & Result");
+        await update(ref(db, 'markets/'+m), { result: r });
+        const snap = await get(ref(db, 'bets'));
+        if(snap.exists()){
+            const data = snap.val();
+            for(let key in data){
+                const b = data[key];
+                if(b.market === m && b.status === "Pending"){
+                    let win = false, mult = 8.5;
+                    if(b.type === "Open" && b.num === r[0]) win = true;
+                    if(b.type === "Close" && b.num === r[r.length-1]) win = true;
+                    if(b.type === "Jodi" && b.num === r) { win = true; mult = 85; }
+                    if(win){
+                        const pay = b.amt * mult;
+                        const bal = await get(ref(db, `users/${b.uid}/balance`));
+                        await set(ref(db, `users/${b.uid}/balance`), (Number(bal.val())||0) + pay);
+                        await update(ref(db, `bets/${key}`), { status: 'Won', payout: pay });
+                    } else { await update(ref(db, `bets/${key}`), { status: 'Loss', payout: 0 }); }
+                }
+            }
+        }
+        alert("Settled!");
+    };
+</script>
+</body>
+</html>

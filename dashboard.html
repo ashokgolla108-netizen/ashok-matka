@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Ashok Matka</title>
+    <style>
+        :root { --red: #d32f2f; --dark: #212121; --green: #2e7d32; --blue: #1976d2; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; margin: 0; padding-bottom: 60px; }
+        .header { background: var(--dark); color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        .wallet-card { background: var(--green); padding: 6px 14px; border-radius: 20px; font-weight: bold; }
+        .tab-bar { display: flex; background: #fff; position: sticky; top: 54px; z-index: 999; border-bottom: 1px solid #ddd; overflow-x: auto; }
+        .tab { flex: 1; text-align: center; padding: 15px; font-weight: bold; cursor: pointer; color: #757575; font-size: 12px; min-width: 90px; text-transform: uppercase; }
+        .tab.active { color: var(--red); border-bottom: 3px solid var(--red); background: #fff5f5; }
+        .tab-content { display: none; padding: 12px; }
+        .tab-content.active { display: block; }
+        .card { background: white; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; border: 1px solid #eee; }
+        .m-header { text-align: center; font-weight: bold; color: #b71c1c; font-size: 16px; margin-bottom: 5px; }
+        .m-res-val { font-size: 32px; color: #333; font-weight: 900; text-align: center; letter-spacing: 4px; padding: 10px 0; }
+        .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid #f5f5f5; }
+        .inputs-flex { display: flex; gap: 8px; align-items: center; }
+        input { border: 1px solid #ccc; border-radius: 6px; padding: 8px; outline: none; }
+        .btn-place { background: var(--red); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .expected-amt { font-size: 10px; color: var(--green); font-weight: bold; display: block; margin-top: 2px; }
+        .hist-card { background: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .form-input { width: 100%; box-sizing: border-box; margin-bottom: 12px; padding: 12px; border-radius: 8px; border: 1px solid #ddd; }
+        .status-won { color: var(--green); font-weight: bold; }
+        .status-loss { color: var(--red); font-weight: bold; }
+        .btn-cancel { background: none; border: 1px solid var(--red); color: var(--red); font-size: 10px; padding: 3px 6px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="header"><span>ASHOK MATKA</span><div class="wallet-card">₹<span id="walletBal">0</span></div></div>
+<div class="tab-bar">
+    <div class="tab active" onclick="switchTab(event, 'gamesView')">Games</div>
+    <div class="tab" onclick="switchTab(event, 'historyView')">My Bets</div>
+    <div class="tab" onclick="switchTab(event, 'depositView')">Deposit</div>
+    <div class="tab" onclick="switchTab(event, 'withdrawView')">Withdraw</div>
+</div>
+
+<div id="gamesView" class="tab-content active"><div id="marketList"></div></div>
+<div id="historyView" class="tab-content"><div id="historyList"></div></div>
+
+<div id="depositView" class="tab-content">
+    <div class="card">
+        <h3>Deposit <small>(Min ₹100)</small></h3>
+        <p style="font-size:12px;">UPI: <b>ashok@upi</b></p>
+        <input type="file" id="depFile" accept="image/*" class="form-input">
+        <input type="number" id="depAmt" placeholder="Amount" class="form-input">
+        <input type="text" id="depUTR" placeholder="12-Digit UTR" class="form-input">
+        <button class="btn-place" style="width:100%" onclick="submitDeposit()">Submit Deposit</button>
+    </div>
+    <div id="myDepHistory"></div>
+</div>
+
+<div id="withdrawView" class="tab-content">
+    <div class="card">
+        <h3>Withdraw <small>(Min ₹100)</small></h3>
+        <input type="number" id="witAmt" placeholder="Amount" class="form-input">
+        <input type="text" id="witMethod" placeholder="UPI ID" class="form-input">
+        <button class="btn-place" style="width:100%; background:#000;" onclick="submitWithdraw()">Request Withdraw</button>
+    </div>
+    <div id="myWitHistory"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, push, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDdgGqtcgvYoXmpjdIvmjlq3AkLKb5cOw0",
+        authDomain: "matkaapp-267b4.firebaseapp.com",
+        databaseURL: "https://matkaapp-267b4-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "matkaapp-267b4"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    let UID = "";
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) { UID = user.uid; startApp(); } 
+        else { window.location.href = "index.html"; }
+    });
+
+    const gameConfig = [
+        { name: "RAJA-RANI MORNING", open: "09:40 AM", close: "10:40 AM" },
+        { name: "MILAN MORNING", open: "10:25 AM", close: "11:15 AM" },
+        { name: "DHANSHREE", open: "11:20 AM", close: "12:20 PM" },
+        { name: "SRIDEVI", open: "11:35 AM", close: "12:35 PM" },
+        { name: "STAR MORNING", open: "11:45 AM", close: "12:45 PM" },
+        { name: "MAHARANI", open: "12:15 PM", close: "02:15 PM" },
+        { name: "TIME BAZAR", open: "01:05 PM", close: "02:05 PM" },
+        { name: "MADHUR DAY", open: "01:30 PM", close: "02:30 PM" },
+        { name: "RAJA-RANI DAY", open: "01:40 PM", close: "02:40 PM" },
+        { name: "MILAN DAY", open: "03:00 PM", close: "05:00 PM" },
+        { name: "RAJDHANI DAY", open: "03:11 PM", close: "05:05 PM" },
+        { name: "SUPREME DAY", open: "03:30 PM", close: "05:35 PM" },
+        { name: "KALYAN", open: "04:30 PM", close: "06:30 PM" },
+        { name: "MAHARANI DAY", open: "05:15 PM", close: "07:15 PM" },
+        { name: "SRIDEVI NIGHT", open: "07:15 PM", close: "08:15 PM" },
+        { name: "DHANSHREE NIGHT", open: "07:30 PM", close: "08:30 PM" },
+        { name: "MADHUR NIGHT", open: "08:40 PM", close: "10:40 PM" },
+        { name: "SUPREME NIGHT", open: "08:45 PM", close: "10:45 PM" },
+        { name: "MILAN NIGHT", open: "09:05 PM", close: "11:05 PM" },
+        { name: "RAJDHANI NIGHT", open: "09:30 PM", close: "11:40 PM" },
+        { name: "KALYAN NIGHT", open: "09:35 PM", close: "11:25 PM" },
+        { name: "RAJA RANI NIGHT", open: "09:40 PM", close: "10:40 PM" },
+        { name: "MAIN BAZAR", open: "09:45 PM", close: "12:05 AM" },
+        { name: "MAHARANI NIGHT", open: "10:15 PM", close: "12:15 AM" }
+    ];
+
+    const parseTime = (tStr) => {
+        const [time, modifier] = tStr.split(' ');
+        let [hours, minutes] = time.split(':');
+        if (hours === '12') hours = '00';
+        if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+        const d = new Date(); d.setHours(hours, minutes, 0, 0);
+        return d;
+    };
+
+    window.switchTab = (e, id) => {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        e.currentTarget.classList.add('active');
+    };
+
+    window.calcExp = (inId, outId, mult) => {
+        const val = parseInt(document.getElementById(inId).value) || 0;
+        document.getElementById(outId).innerText = `Win: ₹${Math.floor(val * mult)}`;
+    };
+
+    function startApp() {
+        onValue(ref(db, `users/${UID}/balance`), (s) => document.getElementById('walletBal').innerText = s.val() || 0);
+
+        onValue(ref(db, 'markets/'), (snap) => {
+            const liveData = snap.val() || {};
+            const now = new Date();
+            const container = document.getElementById('marketList'); container.innerHTML = "";
+            
+            const sorted = [...gameConfig].sort((a, b) => {
+                const aCloseCutoff = new Date(parseTime(a.close).getTime() - 15 * 60000);
+                const bCloseCutoff = new Date(parseTime(b.close).getTime() - 15 * 60000);
+                return (now > aCloseCutoff) - (now > bCloseCutoff) || parseTime(a.open) - parseTime(b.open);
+            });
+
+            sorted.forEach((m, i) => {
+                const live = liveData[m.name] || { result: "", visible: "show" };
+                if(live.visible === "hide") return;
+                const openCutoff = new Date(parseTime(m.open).getTime() - 15 * 60000);
+                const closeCutoff = new Date(parseTime(m.close).getTime() - 15 * 60000);
+                
+                container.innerHTML += `
+                <div class="card">
+                    <div class="m-header">${m.name}</div>
+                    <div class="m-res-val">${live.result || "XX"}</div>
+                    <div class="bet-row"><span>Open</span>
+                        ${now < openCutoff ? `<div class="inputs-flex"><input id="on${i}" maxlength="1" style="width:35px;"><input id="oa${i}" placeholder="₹" style="width:60px;" oninput="calcExp('oa${i}','oe${i}',8.5)"></div><span class="expected-amt" id="oe${i}">Win: ₹0</span><button class="btn-place" onclick="bet('${m.name}','Open','on${i}','oa${i}',1)">Place</button>` : 'CLOSED'}
+                    </div>
+                    <div class="bet-row"><span>Close</span>
+                        ${now < closeCutoff ? `<div class="inputs-flex"><input id="cn${i}" maxlength="1" style="width:35px;"><input id="ca${i}" placeholder="₹" style="width:60px;" oninput="calcExp('ca${i}','ce${i}',8.5)"></div><span class="expected-amt" id="ce${i}">Win: ₹0</span><button class="btn-place" onclick="bet('${m.name}','Close','cn${i}','ca${i}',1)">Place</button>` : 'CLOSED'}
+                    </div>
+                    <div class="bet-row"><span>Jodi</span>
+                        ${now < openCutoff ? `<div class="inputs-flex"><input id="jn${i}" maxlength="2" style="width:40px;"><input id="ja${i}" placeholder="₹" style="width:60px;" oninput="calcExp('ja${i}','je${i}',85)"></div><span class="expected-amt" id="je${i}">Win: ₹0</span><button class="btn-place" onclick="bet('${m.name}','Jodi','jn${i}','ja${i}',2)">Place</button>` : 'CLOSED'}
+                    </div>
+                </div>`;
+            });
+        });
+
+        // Histories
+        onValue(ref(db, 'bets'), (snap) => {
+            const list = document.getElementById('historyList'); list.innerHTML = "<h3>My Bets</h3>";
+            if(snap.exists()) Object.values(snap.val()).reverse().forEach(b => {
+                if(b.uid === UID) list.innerHTML += `<div class="hist-card"><span><b>${b.market}</b><br>${b.type} (${b.num})</span><span style="text-align:right;">₹${b.amt}<br><b class="status-${b.status.toLowerCase()}">${b.status}</b></span></div>`;
+            });
+        });
+
+        onValue(ref(db, 'deposits'), (snap) => {
+            const list = document.getElementById('myDepHistory'); list.innerHTML = "<h3>Deposit History</h3>";
+            if(snap.exists()) Object.values(snap.val()).reverse().forEach(d => {
+                if(d.uid === UID) list.innerHTML += `<div class="hist-card"><span>₹${d.amount}<br><small>UTR: ${d.utr}</small></span><b>${d.status}</b></div>`;
+            });
+        });
+
+        onValue(ref(db, 'withdrawals'), (snap) => {
+            const list = document.getElementById('myWitHistory'); list.innerHTML = "<h3>Withdraw History</h3>";
+            if(snap.exists()) Object.entries(snap.val()).reverse().forEach(([k, w]) => {
+                if(w.uid === UID) list.innerHTML += `<div class="hist-card"><span>₹${w.amount}<br><small>${w.method}</small></span><span style="text-align:right;"><b>${w.status}</b>${w.status==='Pending'?`<br><button class="btn-cancel" onclick="cancelWit('${k}',${w.amount})">Cancel</button>`:''}</span></div>`;
+            });
+        });
+    }
+
+    window.bet = async (m, type, nId, aId, len) => {
+        const n = document.getElementById(nId).value.trim();
+        const a = parseInt(document.getElementById(aId).value);
+        const s = await get(ref(db, `users/${UID}/balance`));
+        if(!n || n.length !== len || isNaN(a) || a <= 0 || a > s.val()) return alert("Invalid entry or balance!");
+        await set(ref(db, `users/${UID}/balance`), s.val() - a);
+        await push(ref(db, 'bets'), { uid: UID, market: m, type, num: n, amt: a, status: "Pending", time: Date.now() });
+        alert("Bet Placed!");
+    };
+
+    window.submitDeposit = async () => {
+        const amt = parseInt(document.getElementById('depAmt').value);
+        const utr = document.getElementById('depUTR').value.trim();
+        const file = document.getElementById('depFile').files[0];
+        if(!file || amt < 100 || utr.length !== 12) return alert("Fill all fields correctly!");
+        const reader = new FileReader();
+        reader.onload = async () => {
+            await push(ref(db, 'deposits'), { uid: UID, amount: amt, utr, image: reader.result, status: 'Pending', time: Date.now() });
+            alert("Submitted!");
+        }; reader.readAsDataURL(file);
+    };
+
+    window.submitWithdraw = async () => {
+        const amt = parseInt(document.getElementById('witAmt').value);
+        const meth = document.getElementById('witMethod').value;
+        const s = await get(ref(db, `users/${UID}/balance`));
+        if(amt < 100 || amt > s.val()) return alert("Insufficient Balance!");
+        await set(ref(db, `users/${UID}/balance`), s.val() - amt);
+        await push(ref(db, 'withdrawals'), { uid: UID, amount: amt, method: meth, status: 'Pending', time: Date.now() });
+        alert("Requested!");
+    };
+
+    window.cancelWit = async (k, a) => {
+        if(!confirm("Cancel and refund?")) return;
+        const s = await get(ref(db, `users/${UID}/balance`));
+        await set(ref(db, `users/${UID}/balance`), (Number(s.val())||0) + a);
+        await update(ref(db, `withdrawals/${k}`), { status: 'Cancelled' });
+    };
+</script>
+</body>
+</html>

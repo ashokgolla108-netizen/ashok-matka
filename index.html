@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ashok Matka - Login</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5; margin: 0; }
+        .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 320px; }
+        h2 { color: #d32f2f; margin-bottom: 25px; letter-spacing: 1px; }
+        input { margin: 10px 0; padding: 14px; width: 100%; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .btn-main { background: #d32f2f; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-sub { background: #f8f9fa; color: #666; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; cursor: pointer; margin-top: 10px; font-size: 13px; }
+        #message { margin-top: 15px; color: #d32f2f; font-size: 13px; min-height: 18px; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>ASHOK MATKA</h2>
+        <input type="email" id="email" placeholder="Email Address">
+        <input type="password" id="password" placeholder="Password">
+        <button class="btn-main" id="btnLogin">LOGIN</button>
+        <button class="btn-sub" id="btnSignup">Create New Account</button>
+        <p id="message"></p>
+    </div>
+    <script type="module" src="auth.js"></script>
+</body>
+</html>
