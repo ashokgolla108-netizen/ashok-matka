@@ -7,8 +7,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          path: main_repo
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -24,12 +22,13 @@ jobs:
           # 1. Create a fresh cordova project
           cordova create village_app com.ashok.village45 Village45
           
-          # 2. Copy your files from the checked-out folder into the app
-          cp main_repo/index.html village_app/www/
-          cp main_repo/dashboard.html village_app/www/
-          cp main_repo/admin.html village_app/www/
-          cp main_repo/auth.js village_app/www/
-          
+          # 2. Copy files from your repo root into the Cordova 'www' folder
+          # Note: We copy index.html, dashboard.html, admin.html, and auth.js
+          cp index.html village_app/www/
+          cp dashboard.html village_app/www/
+          cp admin.html village_app/www/
+          cp auth.js village_app/www/
+
           # 3. Build the APK
           cd village_app
           cordova platform add android@12.0.0 --no-telemetry
