@@ -17,27 +17,25 @@ jobs:
       - name: Install Cordova
         run: npm install -g cordova
 
-      - name: Create and Build App
+      - name: Build APK
         run: |
-          # 1. Create a fresh Cordova project
-          cordova create my_app com.ashok.village45 Village45
-          cd my_app
+          # Create app in a temporary location
+          cordova create ../temp_app com.ashok.village45 Village45
           
-          # 2. Add Android platform
+          # Move cordova files to current directory
+          cp ../temp_app/config.xml .
+          mkdir -p www
+          
+          # Move your web files into the www folder
+          mv index.html dashboard.html admin.html auth.js www/ 2>/dev/null || true
+          
+          # Add platform and build
           cordova platform add android@12.0.0 --no-telemetry
-          
-          # 3. Copy YOUR files from GitHub into the app's web folder
-          cp ../index.html www/ 2>/dev/null || true
-          cp ../dashboard.html www/ 2>/dev/null || true
-          cp ../admin.html www/ 2>/dev/null || true
-          cp ../auth.js www/ 2>/dev/null || true
-          
-          # 4. Build the APK
           cordova build android --debug
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Village45-APK
-          path: my_app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
           
