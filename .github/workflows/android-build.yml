@@ -1,1 +1,44 @@
+name: Build Android APK
+on: [push, workflow_dispatch]
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Setup Cordova Project
+        run: |
+          # Create a temporary cordova wrapper
+          cordova create cordova_app com.ashok.village45 Village45
+          
+          # Remove default cordova files and copy your GitHub files into www
+          rm -rf cordova_app/www/*
+          cp -r ./* cordova_app/www/
+          
+          # Clean up the cordova_app folder inside itself to avoid loops
+          rm -rf cordova_app/www/cordova_app
+          rm -rf cordova_app/www/.github
+
+      - name: Build Android Platform
+        run: |
+          cd cordova_app
+          cordova platform add android --no-telemetry
+          cordova build android --debug
+
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Village45-APK
+          path: cordova_app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          
