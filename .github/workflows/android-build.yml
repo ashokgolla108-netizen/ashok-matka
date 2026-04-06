@@ -14,6 +14,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24' # Uses the latest version to clear that warning
+
       - name: Install Cordova
         run: npm install -g cordova
 
@@ -22,8 +27,7 @@ jobs:
           # 1. Create a fresh cordova project
           cordova create village_app com.ashok.village45 Village45
           
-          # 2. Copy files from your repo root into the Cordova 'www' folder
-          # Note: We copy index.html, dashboard.html, admin.html, and auth.js
+          # 2. Copy files into the Cordova 'www' folder
           cp index.html village_app/www/
           cp dashboard.html village_app/www/
           cp admin.html village_app/www/
@@ -32,6 +36,10 @@ jobs:
           # 3. Build the APK
           cd village_app
           cordova platform add android@12.0.0 --no-telemetry
+          
+          # This command ensures all Android SDK requirements are met before building
+          cordova requirements 
+          
           cordova build android --debug
 
       - name: Upload APK
