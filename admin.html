@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel</title>
+    <title>Village45 Admin - Full Control</title>
     <style>
         :root { --red: #d32f2f; --green: #2e7d32; --blue: #1976d2; --dark: #212121; --orange: #f57c00; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; margin:0; }
@@ -10,98 +10,77 @@
         .logout-btn { background: #ff5252; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .card { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-box { background: #fff; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .stat-box { background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #eee; text-align: center; }
+        .stat-val { font-size: 22px; font-weight: 800; display: block; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: left; }
         th { background: #f8f9fa; color: #666; text-transform: uppercase; font-size: 11px; }
-        .btn { border: none; padding: 8px 14px; border-radius: 6px; color: #fff; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.2s; margin-right:2px; }
-        .btn-green { background: var(--green); } .btn-red { background: var(--red); } 
-        .btn-blue { background: var(--blue); } .btn-orange { background: var(--orange); } .btn-dark { background: var(--dark); }
-        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 6px; outline: none; font-size: 14px; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-        .bg-won, .bg-approved, .bg-success { background: #e8f5e9; color: #2e7d32; } 
-        .bg-loss, .bg-rejected { background: #ffebee; color: #d32f2f; } 
-        .bg-pending, .bg-processing { background: #e3f2fd; color: #1976d2; }
-        #ov { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; }
-        #ov img { max-width:90%; max-height:80%; margin: 5% auto; display:block; border: 4px solid #fff; }
+        .btn { border: none; padding: 8px 14px; border-radius: 6px; color: #fff; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.3s; }
+        .btn-green { background: var(--green); } .btn-red { background: var(--red); } .btn-blue { background: var(--blue); }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .bg-pending { background: #e3f2fd; color: #1976d2; }
+        .bg-approved { background: #e8f5e9; color: #2e7d32; }
+        #ov { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center; }
+        #ov img { max-width:90%; max-height:80%; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div class="admin-header">
-    <h2 style="margin:0; font-size: 18px;">Village45 ADMIN</h2>
-    <button class="logout-btn" onclick="adminLogout()">LOGOUT</button>
+    <h2>VILLAGE45 ADMIN</h2>
+    <button class="logout-btn" id="btnLogout">LOGOUT</button>
 </div>
 
 <div class="grid">
-    <div class="stat-box">Total Volume<br><b id="vSum" style="font-size:24px; color:var(--blue);">₹0</b></div>
-    <div class="stat-box">Admin Net P&L<br><b id="pSum" style="font-size:24px; color:var(--green);">₹0</b></div>
+    <div class="stat-box"><span>TOTAL VOLUME</span><span class="stat-val" id="vSum">₹0</span></div>
+    <div class="stat-box"><span>SYSTEM P&L</span><span class="stat-val" id="pSum">₹0</span></div>
+</div>
+
+<div class="card">
+    <h3>Market Control & Results</h3>
+    <div class="input-group">
+        <select id="mSel">
+            <option value="">Select Market</option>
+            <option>MILAN MORNING</option><option>SRIDEVI</option><option>TIME BAZAR</option>
+            <option>MADHUR DAY</option><option>MILAN DAY</option><option>RAJDHANI DAY</option>
+            <option>KALYAN</option><option>SRIDEVI NIGHT</option><option>MADHUR NIGHT</option>
+            <option>MILAN NIGHT</option><option>RAJDHANI NIGHT</option><option>KALYAN NIGHT</option>
+            <option>MAIN BAZAR</option>
+        </select>
+        <input type="text" id="mRes" placeholder="Result (e.g. 123-45-678)" style="width:150px;">
+        <button onclick="updateMarket()" class="btn btn-blue">SET RESULT</button>
+        <button onclick="toggleVisibility()" class="btn btn-red">SHOW/HIDE MARKET</button>
+    </div>
 </div>
 
 <div class="card">
     <h3>System Settings</h3>
-    <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 10px;">
-        <input id="newUpi" placeholder="Global UPI ID" style="flex:1;">
+    <div class="input-group">
+        <input id="newUpi" placeholder="Global UPI ID">
         <button onclick="updateUpi()" class="btn btn-blue">UPDATE UPI</button>
-    </div>
-    <div style="display:flex; gap:10px; flex-wrap: wrap;">
-        <input id="newWA" placeholder="WhatsApp Number" style="flex:1;">
-        <button onclick="updateWA()" class="btn btn-dark">UPDATE WHATSAPP</button>
+        <input id="newWA" placeholder="WhatsApp (91...)">
+        <button onclick="updateWA()" class="btn btn-green">UPDATE WHATSAPP</button>
     </div>
 </div>
 
 <div class="card">
-    <h3>Market Settlement</h3>
-    <div style="display:flex; gap:10px; flex-wrap: wrap;">
-        <select id="mSel" style="flex:1;">
-            <option value="">-- Select Market --</option>
-            <option>MILAN MORNING</option>
-            <option>SRIDEVI</option>
-            <option>TIME BAZAR</option>
-            <option>MADHUR DAY</option>
-            <option>MILAN DAY</option>
-            <option>SUPREME DAY</option>
-            <option>KALYAN</option>
-            <option>SRIDEVI NIGHT</option>
-            <option>MADHUR NIGHT</option>
-            <option>SUPREME NIGHT</option>
-            <option>MILAN NIGHT</option>
-            <option>KALYAN NIGHT</option>
-            <option>MAIN BAZAR</option>
-        </select>
-        <select id="settleType" style="width:120px;"><option value="Open">OPEN</option><option value="Close">CLOSE</option></select>
-        <input id="mRes" placeholder="Digit" maxlength="1" style="width:80px;">
-        <button onclick="settle()" id="btnSettle" class="btn btn-red">SETTLE & PAY</button>
-        <button onclick="resetMarket()" class="btn btn-dark">RESET/UNDO ALL</button>
-        <button onclick="toggleVisibility()" class="btn btn-blue">HIDE/SHOW</button>
-    </div>
-</div>
-
-<div class="card">
-    <h3>Pending Approvals (Deposit/Withdraw)</h3>
-    <table>
-        <thead><tr><th>Time</th><th>User</th><th>Type</th><th>Details</th><th>Action</th></tr></thead>
-        <tbody id="reqBody"></tbody>
-    </table>
-</div>
-
-<div class="card">
-    <h3>Live Bets & History</h3>
-    <input type="text" id="betSearch" placeholder="Search User..." onkeyup="renderBets()" style="width:200px; margin-bottom:10px;">
-    <div style="max-height: 400px; overflow-y: auto;">
+    <h3>Pending Approvals (Deposits/Withdrawals)</h3>
+    <div style="overflow-x:auto;">
         <table>
-            <thead><tr><th>Time</th><th>User</th><th>Game</th><th>Type</th><th>Num</th><th>Amt</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="betBody"></tbody>
+            <thead><tr><th>User</th><th>Type</th><th>Details</th><th>Action</th></tr></thead>
+            <tbody id="reqBody"></tbody>
         </table>
     </div>
 </div>
 
 <div class="card">
-    <h3>Transaction Logs</h3>
-    <div style="max-height: 300px; overflow-y: auto;">
+    <h3>Recent Bets & Settlements</h3>
+    <div style="overflow-x:auto;">
         <table>
-            <thead><tr><th>Date</th><th>User</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead>
-            <tbody id="logsBody"></tbody>
+            <thead><tr><th>User</th><th>Market</th><th>Bet</th><th>Amt</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="betBody"></tbody>
         </table>
     </div>
 </div>
@@ -110,8 +89,8 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, update, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, update, get, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDdgGqtcgvYoXmpjdIvmjlq3AkLKb5cOw0",
@@ -126,115 +105,90 @@
     let userMap = {};
     let allBets = [];
 
-    onAuthStateChanged(auth, (user) => {
-        if (!user || user.email !== "gollaashok64@gmail.com") window.location.href = "index.html";
-    });
-
-    window.adminLogout = () => { if(confirm("Logout?")) signOut(auth).then(() => { window.location.href = "index.html"; }); };
-
-    onValue(ref(db, 'settings'), (snap) => {
-        if(snap.exists()){
-            const d = snap.val();
-            if(d.adminUpi) document.getElementById('newUpi').value = d.adminUpi;
-            if(d.adminWA) document.getElementById('newWA').value = d.adminWA;
+    onAuthStateChanged(auth, async (user) => {
+        if (!user || user.email !== "gollaashok64@gmail.com") {
+            window.location.href = "index.html";
+        } else {
+            await setPersistence(auth, browserLocalPersistence);
+            loadSystem();
         }
     });
 
-    onValue(ref(db, 'users'), (snap) => {
-        if(snap.exists()) {
-            const data = snap.val();
-            Object.keys(data).forEach(uid => userMap[uid] = data[uid].name || "User");
-        }
-        refreshTransactions();
-    });
-
-    onValue(ref(db, 'bets'), (snap) => {
-        if (snap.exists()) {
-            const data = snap.val();
-            allBets = Object.keys(data).map(key => ({ id: key, ...data[key] })).reverse();
-        } else { allBets = []; }
-        renderBets();
-        calcStats();
-    });
-
-    const getName = (uid) => userMap[uid] || "UID: " + uid.substring(0,5);
-
-    window.settle = async () => {
-        const m = document.getElementById('mSel').value;
-        const digit = document.getElementById('mRes').value.trim(); 
-        const type = document.getElementById('settleType').value;
-        if(!m || digit === "") return alert("Select Market & Digit!");
-        const btn = document.getElementById('btnSettle');
-        btn.disabled = true; btn.innerText = "PAYING...";
-        try {
-            const mSnap = await get(ref(db, `markets/${m}/result`));
-            let currentRes = mSnap.exists() ? mSnap.val() : "XX";
-            let resArr = currentRes.split('');
-            if(type === "Open") resArr[0] = digit; else resArr[1] = digit;
-            const finalResStr = resArr.join('');
-            await update(ref(db, `markets/${m}`), { result: finalResStr });
-            const updates = {};
-            for(let b of allBets){
-                if(b.market === m && (b.status === "Pending" || !b.status)){
-                    let isMatch = false, isWin = false, mult = 9;
-                    if(type === "Open" && b.type === "Open") { isMatch = true; if(b.num == digit) isWin = true; }
-                    else if(type === "Close" && b.type === "Close") { isMatch = true; if(b.num == digit) isWin = true; }
-                    else if(type === "Close" && b.type === "Jodi") { isMatch = true; mult = 90; if(b.num == finalResStr) isWin = true; }
-                    if(isMatch) {
-                        if(isWin) {
-                            const winAmt = Number(b.amt) * mult;
-                            const uBal = await get(ref(db, `users/${b.uid}/balance`));
-                            await set(ref(db, `users/${b.uid}/balance`), (Number(uBal.val()) || 0) + winAmt);
-                            updates[`bets/${b.id}/status`] = "Won";
-                            updates[`bets/${b.id}/payout`] = winAmt;
-                        } else {
-                            updates[`bets/${b.id}/status`] = "Loss";
-                            updates[`bets/${b.id}/payout`] = 0;
-                        }
-                    }
-                }
+    function loadSystem() {
+        // 1. Build User Map (Fixes "User" vs "Ashok" issue)
+        onValue(ref(db, 'users'), (snap) => {
+            if(snap.exists()){
+                const data = snap.val();
+                userMap = {};
+                Object.keys(data).forEach(uid => {
+                    userMap[uid] = data[uid].name || data[uid].username || "User";
+                });
             }
-            await update(ref(db, "/"), updates);
-            alert("Settled!");
-        } catch(e) { alert("Error: " + e.message); }
-        btn.disabled = false; btn.innerText = "SETTLE & PAY";
-    };
+            refreshData();
+        });
+    }
 
-    window.resetMarket = async () => {
-        const m = document.getElementById('mSel').value;
-        const type = document.getElementById('settleType').value;
-        if(!m) return alert("Select Market");
-        if(!confirm(`Reset ALL ${m} (${type}) settlements? Money will be recovered from winners.`)) return;
-        for(let b of allBets) {
-            const isTarget = (type === "Open" && b.type === "Open") || (type === "Close" && (b.type === "Close" || b.type === "Jodi"));
-            if(b.market === m && isTarget && b.status !== "Pending") {
-                if(b.status === "Won" && b.payout > 0) {
-                    const uBal = await get(ref(db, `users/${b.uid}/balance`));
-                    await set(ref(db, `users/${b.uid}/balance`), (Number(uBal.val()) || 0) - b.payout);
-                }
-                await update(ref(db, `bets/${b.id}`), { status: "Pending", payout: 0 });
-            }
-        }
-        alert("Market Reset Successfully!");
-    };
+    const getName = (uid) => userMap[uid] || "UID: " + uid.substring(0, 5);
 
-    function refreshTransactions() {
+    function refreshData() {
+        // Load Pending Requests (Deposits & Withdrawals)
         onValue(ref(db, 'deposits'), (dSnap) => {
             onValue(ref(db, 'withdrawals'), (wSnap) => {
-                const reqB = document.getElementById('reqBody'), logB = document.getElementById('logsBody');
-                reqB.innerHTML = ""; logB.innerHTML = "";
-                if(dSnap.exists()) Object.entries(dSnap.val()).reverse().forEach(([id, d]) => {
-                    if(d.status === "Pending") reqB.innerHTML += `<tr><td>${new Date(d.time).toLocaleTimeString()}</td><td>${getName(d.uid)}</td><td>DEP</td><td>₹${d.amount}<br>UTR:${d.utr}</td><td><button class="btn btn-blue" onclick="viewI('${d.image}')">IMG</button><button class="btn btn-green" onclick="approveDep('${id}','${d.uid}',${d.amount})">✔</button><button class="btn btn-red" onclick="rejReq('deposits','${id}')">✖</button></td></tr>`;
-                    else logB.innerHTML += `<tr><td>${new Date(d.time).toLocaleDateString()}</td><td>${getName(d.uid)}</td><td>DEP</td><td>₹${d.amount}</td><td><span class="badge bg-${d.status.toLowerCase()}">${d.status}</span></td></tr>`;
+                const reqB = document.getElementById('reqBody');
+                reqB.innerHTML = "";
+                
+                if(dSnap.exists()) Object.entries(dSnap.val()).forEach(([id, d]) => {
+                    if(d.status === "Pending") {
+                        reqB.innerHTML += `<tr><td>${getName(d.uid)}</td><td>DEP</td><td>₹${d.amount}<br>UTR: ${d.utr}</td>
+                        <td><button class="btn btn-blue" onclick="viewI('${d.image}')">IMG</button>
+                        <button class="btn btn-green" onclick="approveDep('${id}','${d.uid}',${d.amount})">✔</button></td></tr>`;
+                    }
                 });
-                if(wSnap.exists()) Object.entries(wSnap.val()).reverse().forEach(([id, w]) => {
-                    const s = w.status || "Pending";
-                    if(s === "Pending" || s === "Processing") reqB.innerHTML += `<tr><td>${new Date(w.time).toLocaleTimeString()}</td><td>${getName(w.uid)}</td><td>WIT</td><td>₹${w.amount}<br>${w.method}</td><td><button class="btn btn-orange" onclick="updWS('${id}','Processing')">Ing</button><button class="btn btn-green" onclick="updWS('${id}','Success')">✔</button><button class="btn btn-red" onclick="rejWit('${id}','${w.uid}',${w.amount})">✖</button></td></tr>`;
-                    else logB.innerHTML += `<tr><td>${new Date(w.time).toLocaleDateString()}</td><td>${getName(w.uid)}</td><td>WIT</td><td>₹${w.amount}</td><td><span class="badge bg-${s.toLowerCase()}">${s}</span></td></tr>`;
+
+                if(wSnap.exists()) Object.entries(wSnap.val()).forEach(([id, w]) => {
+                    if(w.status === "Pending") {
+                        reqB.innerHTML += `<tr><td>${getName(w.uid)}</td><td>WIT</td><td>₹${w.amount}<br>${w.method}</td>
+                        <td><button class="btn btn-green" onclick="update(ref(db,'withdrawals/${id}'),{status:'Success'})">✔</button>
+                        <button class="btn btn-red" onclick="rejectWit('${id}','${w.uid}',${w.amount})">✖</button></td></tr>`;
+                    }
                 });
             });
         });
+
+        // Load Bets and Stats
+        onValue(ref(db, 'bets'), (snap) => {
+            const betB = document.getElementById('betBody');
+            betB.innerHTML = ""; allBets = [];
+            if(!snap.exists()) return;
+            
+            Object.entries(snap.val()).reverse().forEach(([id, b]) => {
+                allBets.push(b);
+                const s = b.status || "Pending";
+                betB.innerHTML += `<tr>
+                    <td>${getName(b.uid)}</td><td>${b.market}</td><td>${b.type}: ${b.num}</td><td>₹${b.amt}</td>
+                    <td><span class="badge bg-${s.toLowerCase()}">${s}</span></td>
+                    <td>
+                        <button class="btn btn-green" onclick="settle('${id}','${b.uid}',${b.amt},'Won')">WIN</button>
+                        <button class="btn btn-red" onclick="settle('${id}','${b.uid}',0,'Loss')">LOSS</button>
+                    </td>
+                </tr>`;
+            });
+            calcStats();
+        });
     }
+
+    // --- LOGIC FUNCTIONS ---
+
+    window.settle = async (id, uid, amt, status) => {
+        let payout = 0;
+        if(status === 'Won') {
+            const multi = confirm("Double payout? (OK=90x, Cancel=9x)") ? 90 : 9;
+            payout = amt * multi;
+            const uBal = await get(ref(db, `users/${uid}/balance`));
+            await set(ref(db, `users/${uid}/balance`), (Number(uBal.val()) || 0) + payout);
+        }
+        await update(ref(db, `bets/${id}`), { status: status, payout: payout });
+    };
 
     window.approveDep = async (id, uid, amt) => {
         const b = await get(ref(db, `users/${uid}/balance`));
@@ -242,32 +196,10 @@
         await update(ref(db, `deposits/${id}`), { status: "Approved" });
     };
 
-    window.updWS = (id, s) => update(ref(db, `withdrawals/${id}`), { status: s });
-    window.rejReq = (path, id) => update(ref(db, `${path}/${id}`), { status: "Rejected" });
-    window.rejWit = async (id, uid, amt) => {
+    window.rejectWit = async (id, uid, amt) => {
         const b = await get(ref(db, `users/${uid}/balance`));
         await set(ref(db, `users/${uid}/balance`), (Number(b.val()) || 0) + Number(amt));
-        update(ref(db, `withdrawals/${id}`), { status: "Rejected" });
-    };
-
-    window.renderBets = () => {
-        const search = document.getElementById('betSearch').value.toLowerCase();
-        const body = document.getElementById('betBody');
-        body.innerHTML = "";
-        allBets.filter(b => getName(b.uid).toLowerCase().includes(search)).slice(0, 50).forEach(b => {
-            const s = b.status || "Pending";
-            const sCls = s === "Won" ? "bg-won" : (s === "Loss" ? "bg-loss" : "bg-pending");
-            body.innerHTML += `<tr><td>${new Date(b.time).toLocaleTimeString()}</td><td><b>${getName(b.uid)}</b></td><td>${b.market}</td><td>${b.type}</td><td>${b.num}</td><td>₹${b.amt}</td><td><span class="badge ${sCls}">${s}</span></td><td><button class="btn btn-dark" style="font-size:9px;" onclick="undoSingle('${b.id}','${b.uid}','${s}',${b.payout || 0})">UNDO</button></td></tr>`;
-        });
-    };
-
-    window.undoSingle = async (id, uid, s, p) => {
-        if(!confirm("Undo this bet?")) return;
-        if(s === "Won") {
-            const uBal = await get(ref(db, `users/${uid}/balance`));
-            await set(ref(db, `users/${uid}/balance`), (Number(uBal.val()) || 0) - p);
-        }
-        await update(ref(db, `bets/${id}`), { status: "Pending", payout: 0 });
+        await update(ref(db, `withdrawals/${id}`), { status: "Rejected" });
     };
 
     function calcStats() {
@@ -284,19 +216,26 @@
         pElem.style.color = pnl >= 0 ? "var(--green)" : "var(--red)";
     }
 
-    window.updateUpi = () => set(ref(db, 'settings/adminUpi'), document.getElementById('newUpi').value);
-    window.updateWA = () => set(ref(db, 'settings/adminWA'), document.getElementById('newWA').value);
-    
+    window.updateMarket = () => {
+        const m = document.getElementById('mSel').value;
+        const r = document.getElementById('mRes').value;
+        if(!m || !r) return alert("Select Market & Enter Result");
+        update(ref(db, `markets/${m}`), { result: r });
+        alert("Result Updated!");
+    };
+
     window.toggleVisibility = async () => {
         const m = document.getElementById('mSel').value;
         if(!m) return alert("Select Market");
         const s = await get(ref(db, `markets/${m}/visible`));
-        const next = s.val() === "hide" ? "show" : "hide";
-        await update(ref(db, `markets/${m}`), { visible: next });
-        alert(`${m} is now ${next.toUpperCase()}`);
+        update(ref(db, `markets/${m}`), { visible: s.val() === "hide" ? "show" : "hide" });
+        alert("Visibility Changed!");
     };
-    
-    window.viewI = (s) => { document.getElementById('ovImg').src=s; document.getElementById('ov').style.display='block'; };
+
+    window.updateUpi = () => set(ref(db, 'settings/adminUpi'), document.getElementById('newUpi').value);
+    window.updateWA = () => set(ref(db, 'settings/adminWA'), document.getElementById('newWA').value);
+    window.viewI = (s) => { document.getElementById('ovImg').src=s; document.getElementById('ov').style.display='flex'; };
+    window.btnLogout = () => signOut(auth).then(() => window.location.href="index.html");
 </script>
 </body>
 </html>
