@@ -19,17 +19,18 @@ jobs:
 
       - name: Build APK
         run: |
-          # Create app in a temporary location
-          cordova create ../temp_app com.ashok.village45 Village45
+          # 1. Create a project in a separate folder
+          cordova create build_dir com.ashok.village45 Village45
           
-          # Move cordova files to current directory
-          cp ../temp_app/config.xml .
-          mkdir -p www
+          # 2. Copy your files into that folder's web directory
+          # Using '.' ensures we grab them from your main GitHub folder
+          cp index.html build_dir/www/ 2>/dev/null || true
+          cp dashboard.html build_dir/www/ 2>/dev/null || true
+          cp admin.html build_dir/www/ 2>/dev/null || true
+          cp auth.js build_dir/www/ 2>/dev/null || true
           
-          # Move your web files into the www folder
-          mv index.html dashboard.html admin.html auth.js www/ 2>/dev/null || true
-          
-          # Add platform and build
+          # 3. Enter the folder and build
+          cd build_dir
           cordova platform add android@12.0.0 --no-telemetry
           cordova build android --debug
 
@@ -37,5 +38,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Village45-APK
-          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          path: build_dir/platforms/android/app/build/outputs/apk/debug/app-debug.apk
           
