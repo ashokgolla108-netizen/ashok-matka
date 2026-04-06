@@ -86,7 +86,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, onValue, set, push, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -101,6 +101,9 @@
     const auth = getAuth(app);
     let UID = null;
     let currentAdminUpi = "";
+
+    // Set Persistence to Local so users stay logged in
+    setPersistence(auth, browserLocalPersistence);
 
     const gameConfig = [
         { name: "MILAN MORNING", open: "10:25 AM", close: "11:15 AM" },
@@ -119,8 +122,12 @@
     ];
 
     onAuthStateChanged(auth, (user) => {
-        if (user) { UID = user.uid; startListeners(); } 
-        else { window.location.href = "index.html"; }
+        if (user) { 
+            UID = user.uid; 
+            startListeners(); 
+        } else { 
+            window.location.href = "index.html"; 
+        }
     });
 
     function startListeners() {
