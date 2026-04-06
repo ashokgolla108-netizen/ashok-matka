@@ -55,14 +55,19 @@
     <div style="display:flex; gap:10px; flex-wrap: wrap;">
         <select id="mSel" style="flex:1;">
             <option value="">-- Select Market --</option>
-            <option>RAJA-RANI MORNING</option><option>MILAN MORNING</option><option>DHANSHREE</option>
-            <option>SRIDEVI</option><option>STAR MORNING</option><option>MAHARANI</option>
-            <option>TIME BAZAR</option><option>MADHUR DAY</option><option>RAJA-RANI DAY</option>
-            <option>MILAN DAY</option><option>RAJDHANI DAY</option><option>SUPREME DAY</option>
-            <option>KALYAN</option><option>MAHARANI DAY</option><option>SRIDEVI NIGHT</option>
-            <option>DHANSHREE NIGHT</option><option>MADHUR NIGHT</option><option>SUPREME NIGHT</option>
-            <option>MILAN NIGHT</option><option>RAJDHANI NIGHT</option><option>KALYAN NIGHT</option>
-            <option>RAJA RANI NIGHT</option><option>MAIN BAZAR</option><option>MAHARANI NIGHT</option>
+            <option>MILAN MORNING</option>
+            <option>SRIDEVI</option>
+            <option>TIME BAZAR</option>
+            <option>MADHUR DAY</option>
+            <option>MILAN DAY</option>
+            <option>SUPREME DAY</option>
+            <option>KALYAN</option>
+            <option>SRIDEVI NIGHT</option>
+            <option>MADHUR NIGHT</option>
+            <option>SUPREME NIGHT</option>
+            <option>MILAN NIGHT</option>
+            <option>KALYAN NIGHT</option>
+            <option>MAIN BAZAR</option>
         </select>
         <select id="settleType" style="width:120px;"><option value="Open">OPEN</option><option value="Close">CLOSE</option></select>
         <input id="mRes" placeholder="Digit" maxlength="1" style="width:80px;">
@@ -121,14 +126,12 @@
     let userMap = {};
     let allBets = [];
 
-    // Security Check
     onAuthStateChanged(auth, (user) => {
         if (!user || user.email !== "gollaashok64@gmail.com") window.location.href = "index.html";
     });
 
     window.adminLogout = () => { if(confirm("Logout?")) signOut(auth).then(() => { window.location.href = "index.html"; }); };
 
-    // Load Settings
     onValue(ref(db, 'settings'), (snap) => {
         if(snap.exists()){
             const d = snap.val();
@@ -137,16 +140,14 @@
         }
     });
 
-    // Load Users first
     onValue(ref(db, 'users'), (snap) => {
         if(snap.exists()) {
             const data = snap.val();
             Object.keys(data).forEach(uid => userMap[uid] = data[uid].name || "User");
         }
-        refreshTransactions(); // Start listeners after users are mapped
+        refreshTransactions();
     });
 
-    // Load Bets
     onValue(ref(db, 'bets'), (snap) => {
         if (snap.exists()) {
             const data = snap.val();
@@ -158,16 +159,13 @@
 
     const getName = (uid) => userMap[uid] || "UID: " + uid.substring(0,5);
 
-    // --- SETTLEMENT ---
     window.settle = async () => {
         const m = document.getElementById('mSel').value;
         const digit = document.getElementById('mRes').value.trim(); 
         const type = document.getElementById('settleType').value;
         if(!m || digit === "") return alert("Select Market & Digit!");
-
         const btn = document.getElementById('btnSettle');
         btn.disabled = true; btn.innerText = "PAYING...";
-
         try {
             const mSnap = await get(ref(db, `markets/${m}/result`));
             let currentRes = mSnap.exists() ? mSnap.val() : "XX";
@@ -175,7 +173,6 @@
             if(type === "Open") resArr[0] = digit; else resArr[1] = digit;
             const finalResStr = resArr.join('');
             await update(ref(db, `markets/${m}`), { result: finalResStr });
-
             const updates = {};
             for(let b of allBets){
                 if(b.market === m && (b.status === "Pending" || !b.status)){
@@ -183,7 +180,6 @@
                     if(type === "Open" && b.type === "Open") { isMatch = true; if(b.num == digit) isWin = true; }
                     else if(type === "Close" && b.type === "Close") { isMatch = true; if(b.num == digit) isWin = true; }
                     else if(type === "Close" && b.type === "Jodi") { isMatch = true; mult = 90; if(b.num == finalResStr) isWin = true; }
-
                     if(isMatch) {
                         if(isWin) {
                             const winAmt = Number(b.amt) * mult;
@@ -209,7 +205,6 @@
         const type = document.getElementById('settleType').value;
         if(!m) return alert("Select Market");
         if(!confirm(`Reset ALL ${m} (${type}) settlements? Money will be recovered from winners.`)) return;
-
         for(let b of allBets) {
             const isTarget = (type === "Open" && b.type === "Open") || (type === "Close" && (b.type === "Close" || b.type === "Jodi"));
             if(b.market === m && isTarget && b.status !== "Pending") {
@@ -223,18 +218,15 @@
         alert("Market Reset Successfully!");
     };
 
-    // --- DEPOSITS & WITHDRAWALS ---
     function refreshTransactions() {
         onValue(ref(db, 'deposits'), (dSnap) => {
             onValue(ref(db, 'withdrawals'), (wSnap) => {
                 const reqB = document.getElementById('reqBody'), logB = document.getElementById('logsBody');
                 reqB.innerHTML = ""; logB.innerHTML = "";
-                
                 if(dSnap.exists()) Object.entries(dSnap.val()).reverse().forEach(([id, d]) => {
                     if(d.status === "Pending") reqB.innerHTML += `<tr><td>${new Date(d.time).toLocaleTimeString()}</td><td>${getName(d.uid)}</td><td>DEP</td><td>₹${d.amount}<br>UTR:${d.utr}</td><td><button class="btn btn-blue" onclick="viewI('${d.image}')">IMG</button><button class="btn btn-green" onclick="approveDep('${id}','${d.uid}',${d.amount})">✔</button><button class="btn btn-red" onclick="rejReq('deposits','${id}')">✖</button></td></tr>`;
                     else logB.innerHTML += `<tr><td>${new Date(d.time).toLocaleDateString()}</td><td>${getName(d.uid)}</td><td>DEP</td><td>₹${d.amount}</td><td><span class="badge bg-${d.status.toLowerCase()}">${d.status}</span></td></tr>`;
                 });
-                
                 if(wSnap.exists()) Object.entries(wSnap.val()).reverse().forEach(([id, w]) => {
                     const s = w.status || "Pending";
                     if(s === "Pending" || s === "Processing") reqB.innerHTML += `<tr><td>${new Date(w.time).toLocaleTimeString()}</td><td>${getName(w.uid)}</td><td>WIT</td><td>₹${w.amount}<br>${w.method}</td><td><button class="btn btn-orange" onclick="updWS('${id}','Processing')">Ing</button><button class="btn btn-green" onclick="updWS('${id}','Success')">✔</button><button class="btn btn-red" onclick="rejWit('${id}','${w.uid}',${w.amount})">✖</button></td></tr>`;
@@ -258,7 +250,6 @@
         update(ref(db, `withdrawals/${id}`), { status: "Rejected" });
     };
 
-    // --- HELPERS ---
     window.renderBets = () => {
         const search = document.getElementById('betSearch').value.toLowerCase();
         const body = document.getElementById('betBody');
