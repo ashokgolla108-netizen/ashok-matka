@@ -41,7 +41,7 @@
 <body>
     <div class="header">
         <div class="user-info">
-            <span id="dispName" style="font-weight: bold;">...</span><br>
+            <span id="dispName" style="font-weight: bold; text-transform: uppercase; font-size: 15px;">...</span><br>
             <div class="wallet-card">₹<span id="walletBal">0</span></div>
         </div>
         <button class="logout-btn" onclick="logout()">LOGOUT</button>
@@ -101,8 +101,8 @@
     const auth = getAuth(app);
     let UID = null;
     let currentAdminUpi = "";
+    let globalBalance = 0; // Cached to speed up checks
 
-    // Set Persistence to Local so users stay logged in
     setPersistence(auth, browserLocalPersistence);
 
     const gameConfig = [
@@ -131,34 +131,33 @@
     });
 
     function startListeners() {
+        // 1. Fetch Settings (UPI & WhatsApp)
         onValue(ref(db, 'settings'), (snap) => {
             const s = snap.val() || {};
-            currentAdminUpi = s.adminUpi || "ashok@upi";
+            currentAdminUpi = s.adminUpi || "admin@upi";
             document.getElementById('adminUpiDisp').innerText = currentAdminUpi;
             document.getElementById('helpLink').href = `https://wa.me/${s.adminWA || '918328016917'}`;
         });
 
+        // 2. Fetch User Personal Data (Name & Balance)
         onValue(ref(db, `users/${UID}`), (s) => {
             const d = s.val() || {};
             document.getElementById('dispName').innerText = d.name || "User";
             document.getElementById('walletBal').innerText = d.balance || 0;
+            globalBalance = Number(d.balance || 0);
         });
 
+        // 3. Render Markets Real-time
         onValue(ref(db, 'markets'), (snap) => {
             const live = snap.val() || {};
-            const container = document.getElementById('marketList'); container.innerHTML = "";
+            const container = document.getElementById('marketList'); 
+            container.innerHTML = "";
             const now = new Date();
 
-            const sortedGames = [...gameConfig].sort((a, b) => {
-                const aClose = parseTime(a.close), bClose = parseTime(b.close);
-                const aIsClose = now >= new Date(aClose.getTime() - 15 * 60000);
-                const bIsClose = now >= new Date(bClose.getTime() - 15 * 60000);
-                return aIsClose - bIsClose;
-            });
-
-            sortedGames.forEach((m) => {
+            gameConfig.forEach((m) => {
                 const liveM = live[m.name] || { result: "XX", visible: "show" };
                 if(liveM.visible === "hide") return;
+                
                 const safeName = m.name.replace(/\s+/g, '');
                 const openT = parseTime(m.open), closeT = parseTime(m.close);
                 const isOpen = now < new Date(openT.getTime() - 15 * 60000);
@@ -203,26 +202,31 @@
             });
         });
 
+        // 4. Load Bet History
         onValue(ref(db, 'bets'), (snap) => {
             const list = document.getElementById('historyList'); list.innerHTML = "<h4>My Bets</h4>";
             if(!snap.exists()) return;
             Object.values(snap.val()).reverse().forEach(b => {
                 if(b.uid === UID) {
                     const s = b.status || "Pending";
-                    const color = s==='Won'?'#2e7d32':(s==='Loss'?'#d32f2f':'#1976d2');
-                    list.innerHTML += `<div class="hist-card" style="border-left-color:${color}">
-                        <div class="hist-row"><div><b>${b.market}</b><br><small>${b.type} (${b.num})</small></div><div style="text-align:right;">₹${b.amt}<br><span class="status-${s.toLowerCase()}">${s === 'Won' ? '+₹'+b.payout : s}</span></div></div>
+                    const colorClass = s === 'Won' ? 'status-won' : (s === 'Loss' ? 'status-loss' : 'status-pending');
+                    list.innerHTML += `<div class="hist-card">
+                        <div style="display:flex; justify-content:space-between;">
+                            <div><b>${b.market}</b><br><small>${b.type} (${b.num})</small></div>
+                            <div style="text-align:right;">₹${b.amt}<br><span class="${colorClass}">${s === 'Won' ? '+₹'+b.payout : s}</span></div>
+                        </div>
                         <div style="font-size:9px; color:#999; margin-top:5px;">${new Date(b.time).toLocaleString()}</div>
                     </div>`;
                 }
             });
         });
 
+        // 5. Load Deposit & Withdrawal History
         onValue(ref(db, 'deposits'), (snap) => {
             const list = document.getElementById('myDepHistory'); list.innerHTML = "<h4>Deposit Status</h4>";
             if(!snap.exists()) return;
             Object.values(snap.val()).reverse().forEach(d => {
-                if(d.uid === UID) list.innerHTML += `<div class="hist-card"><div class="hist-row"><span>₹${d.amount}</span><span class="status-${d.status.toLowerCase()}">${d.status}</span></div><div style="font-size:9px; color:#999;">UTR: ${d.utr} | ${new Date(d.time).toLocaleString()}</div></div>`;
+                if(d.uid === UID) list.innerHTML += `<div class="hist-card"><div style="display:flex; justify-content:space-between;"><span>₹${d.amount}</span><span class="status-${d.status.toLowerCase()}">${d.status}</span></div><div style="font-size:9px; color:#999;">UTR: ${d.utr} | ${new Date(d.time).toLocaleString()}</div></div>`;
             });
         });
 
@@ -232,77 +236,84 @@
             Object.entries(snap.val()).reverse().forEach(([id, w]) => {
                 if(w.uid === UID) {
                     const s = w.status || "Pending";
-                    list.innerHTML += `<div class="hist-card"><div class="hist-row"><span>₹${w.amount}</span><span class="status-${s.toLowerCase()}">${s}</span></div><div style="font-size:9px; color:#999;">${w.method} | ${new Date(w.time).toLocaleString()}</div>
+                    list.innerHTML += `<div class="hist-card"><div style="display:flex; justify-content:space-between;"><span>₹${w.amount}</span><span class="status-${s.toLowerCase()}">${s}</span></div><div style="font-size:9px; color:#999;">${w.method} | ${new Date(w.time).toLocaleString()}</div>
                     ${s === "Pending" ? `<button class="btn-cancel" onclick="cancelWit('${id}', ${w.amount})">Cancel Request</button>` : ''}</div>`;
                 }
             });
         });
     }
 
+    // --- FUNCTION LOGIC ---
     window.submitDeposit = async () => {
         const utr = document.getElementById('depUTR').value.trim();
         const amt = parseInt(document.getElementById('depAmt').value);
         const file = document.getElementById('depFile').files[0];
         const btn = document.getElementById('btnDep');
         if(!file || isNaN(amt) || amt < 100 || utr.length !== 12) return alert("Fill all details correctly (Min ₹100, 12-digit UTR)");
-        btn.disabled = true; btn.innerText = "Checking UTR...";
-        const depSnap = await get(ref(db, 'deposits'));
-        if(depSnap.exists()){
-            const alreadyUsed = Object.values(depSnap.val()).some(d => d.utr === utr);
-            if(alreadyUsed) {
-                alert("This UTR has already been submitted!");
-                btn.disabled = false; btn.innerText = "Submit Deposit";
-                return;
+        btn.disabled = true; btn.innerText = "Processing...";
+        
+        try {
+            const depSnap = await get(ref(db, 'deposits'));
+            if(depSnap.exists()){
+                const alreadyUsed = Object.values(depSnap.val()).some(d => d.utr === utr);
+                if(alreadyUsed) {
+                    btn.disabled = false; btn.innerText = "Submit Deposit";
+                    return alert("This UTR has already been submitted!");
+                }
             }
-        }
-        const reader = new FileReader();
-        reader.onload = async () => {
-            await push(ref(db, 'deposits'), { uid: UID, amount: amt, utr: utr, image: reader.result, status: 'Pending', time: Date.now() });
-            alert("Deposit submitted!");
-            btn.disabled = false; btn.innerText = "Submit Deposit";
-            document.getElementById('depUTR').value = ""; document.getElementById('depAmt').value = "";
-        };
-        reader.readAsDataURL(file);
+            const reader = new FileReader();
+            reader.onload = async () => {
+                await push(ref(db, 'deposits'), { uid: UID, amount: amt, utr: utr, image: reader.result, status: 'Pending', time: Date.now() });
+                alert("Deposit submitted successfully!");
+                btn.disabled = false; btn.innerText = "Submit Deposit";
+                document.getElementById('depUTR').value = ""; document.getElementById('depAmt').value = "";
+            };
+            reader.readAsDataURL(file);
+        } catch(e) { alert("Error: " + e.message); btn.disabled = false; }
     };
 
     window.submitWithdraw = async () => {
         const amt = parseInt(document.getElementById('witAmt').value);
         const meth = document.getElementById('witMethod').value.trim();
-        if(amt < 100 || !meth) return alert("Min ₹100");
-        const bSnap = await get(ref(db, `users/${UID}/balance`));
-        const bal = bSnap.val() || 0;
-        if(amt > bal) return alert("Insufficient Balance");
-        await set(ref(db, `users/${UID}/balance`), bal - amt);
-        await push(ref(db, 'withdrawals'), { uid: UID, amount: amt, method: meth, status: 'Pending', time: Date.now() });
-        alert("Withdrawal requested!");
+        if(amt < 100 || !meth) return alert("Min withdrawal ₹100");
+        if(amt > globalBalance) return alert("Insufficient Balance");
+        
+        if(confirm(`Withdraw ₹${amt} to ${meth}?`)) {
+            await set(ref(db, `users/${UID}/balance`), globalBalance - amt);
+            await push(ref(db, 'withdrawals'), { uid: UID, amount: amt, method: meth, status: 'Pending', time: Date.now() });
+            alert("Withdrawal requested!");
+            document.getElementById('witAmt').value = ""; document.getElementById('witMethod').value = "";
+        }
     };
 
     window.cancelWit = async (id, amt) => {
         if(!confirm("Cancel and refund ₹" + amt + "?")) return;
-        const bSnap = await get(ref(db, `users/${UID}/balance`));
-        await set(ref(db, `users/${UID}/balance`), (bSnap.val() || 0) + amt);
+        await set(ref(db, `users/${UID}/balance`), globalBalance + amt);
         await update(ref(db, `withdrawals/${id}`), { status: 'Cancelled' });
-        alert("Refunded!");
+        alert("Refunded successfully!");
     };
 
     window.bet = async (m, type, nId, aId, len) => {
         const n = document.getElementById(nId).value.trim();
         const a = parseInt(document.getElementById(aId).value);
-        if(!n || n.length !== len || isNaN(a) || a < 5) return alert("Invalid entry");
-        const bSnap = await get(ref(db, `users/${UID}/balance`));
-        const bal = bSnap.val() || 0;
-        if(a > bal) return alert("Low Balance!");
-        await set(ref(db, `users/${UID}/balance`), bal - a);
-        await push(ref(db, 'bets'), { uid: UID, market: m, type, num: n, amt: a, status: "Pending", time: Date.now() });
-        alert("Bet Placed!");
-        document.getElementById(nId).value = ""; document.getElementById(aId).value = "";
+        if(!n || n.length !== len || isNaN(a) || a < 5) return alert("Invalid entry (Min ₹5)");
+        if(a > globalBalance) return alert("Low Balance! Please deposit.");
+        
+        if(confirm(`Place ₹${a} bet on ${n}?`)) {
+            await set(ref(db, `users/${UID}/balance`), globalBalance - a);
+            await push(ref(db, 'bets'), { uid: UID, market: m, type, num: n, amt: a, status: "Pending", time: Date.now() });
+            alert("Bet Placed!");
+            document.getElementById(nId).value = ""; document.getElementById(aId).value = "";
+        }
     };
 
     window.copyUPI = () => { navigator.clipboard.writeText(currentAdminUpi); alert("UPI Copied!"); };
+    
     window.switchTab = (e, id) => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(id).classList.add('active'); e.currentTarget.classList.add('active');
+        document.getElementById(id).classList.add('active'); 
+        e.currentTarget.classList.add('active');
     };
 
     function parseTime(t) {
@@ -313,7 +324,7 @@
         const d = new Date(); d.setHours(h, m, 0, 0); return d;
     }
 
-    window.logout = () => signOut(auth).then(() => window.location.href = "index.html");
+    window.logout = () => { if(confirm("Logout?")) signOut(auth).then(() => window.location.href = "index.html"); };
 </script>
 </body>
 </html>
