@@ -14,14 +14,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      # This is the "magic" step that fixes the SDK errors automatically
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Cordova
         run: npm install -g cordova
-
-      - name: Setup Android SDK
-        # This step ensures the Android tools and licenses are ready
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
 
       - name: Create and Build
         run: |
@@ -29,7 +27,6 @@ jobs:
           cordova create village_app com.ashok.village45 Village45
           
           # 2. Copy files into the Cordova 'www' folder
-          # No 'main_repo' prefix needed since we are in the root
           cp index.html village_app/www/
           cp dashboard.html village_app/www/
           cp admin.html village_app/www/
