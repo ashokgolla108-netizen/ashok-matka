@@ -11,7 +11,7 @@ jobs:
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '11' # Changed from 17 to 11 to fix the XmlParser error
+          java-version: '11'
           distribution: 'temurin'
 
       - name: Setup Android SDK
@@ -22,13 +22,13 @@ jobs:
 
       - name: Create and Build
         run: |
-          # 1. Create project
+          # 1. Create a fresh cordova project
           cordova create village_app com.ashok.village45 Village45
           
-          # 2. Copy your files
+          # 2. Copy files (Ensure names match exactly)
           cp index.html dashboard.html admin.html auth.js village_app/www/
 
-          # 3. Build
+          # 3. Build the APK
           cd village_app
           cordova platform add android@12.0.0 --no-telemetry
           cordova build android --debug
