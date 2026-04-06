@@ -3,7 +3,10 @@ import {
     getAuth, 
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
-    sendPasswordResetEmail 
+    sendPasswordResetEmail,
+    setPersistence,             // Added for Persistence
+    browserLocalPersistence,    // Added for Persistence
+    onAuthStateChanged          // Added for Auto-Login check
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -22,6 +25,18 @@ const db = getDatabase(app);
 // --- ADMIN CONFIGURATION ---
 const ADMIN_EMAIL = "gollaashok64@gmail.com";
 let isLoginMode = true;
+
+// --- FIX 1: AUTO-REDIRECT IF ALREADY LOGGED IN ---
+// This runs immediately when the page loads
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        if (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+            window.location.href = "./admin.html";
+        } else {
+            window.location.href = "./dashboard.html";
+        }
+    }
+});
 
 document.addEventListener("DOMContentLoaded", () => {
     const signupExtra = document.getElementById('signupExtra');
@@ -68,16 +83,14 @@ document.addEventListener("DOMContentLoaded", () => {
         btnSubmit.innerText = "Connecting...";
 
         try {
+            // --- FIX 2: SET PERSISTENCE TO LOCAL ---
+            // This ensures the session is saved in the browser/app memory
+            await setPersistence(auth, browserLocalPersistence);
+
             if (isLoginMode) {
                 await signInWithEmailAndPassword(auth, email, password);
                 
-                // --- GITHUB PATH FIX ---
-                // Using './' ensures it works inside the /ashok-matka/ subfolder
-                if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-                    window.location.href = "./admin.html";
-                } else {
-                    window.location.href = "./dashboard.html";
-                }
+                // Redirection will be handled by onAuthStateChanged automatically
             } else {
                 const name = document.getElementById('regName').value.trim();
                 const mobile = document.getElementById('regMobile').value.trim();
@@ -99,11 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     status: "Active"
                 });
 
-                if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-                    window.location.href = "./admin.html";
-                } else {
-                    window.location.href = "./dashboard.html";
-                }
+                // Redirection will be handled by onAuthStateChanged automatically
             }
         } catch (err) {
             btnSubmit.disabled = false;
