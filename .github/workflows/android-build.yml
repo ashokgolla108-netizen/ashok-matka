@@ -19,26 +19,30 @@ jobs:
 
       - name: Setup Cordova Project
         run: |
-          # Create a temporary cordova wrapper
-          cordova create cordova_app com.ashok.village45 Village45
+          # Create the app container
+          cordova create build_app com.ashok.village45 Village45
           
-          # Remove default cordova files and copy your GitHub files into www
-          rm -rf cordova_app/www/*
-          cp -r ./* cordova_app/www/
+          # Clean default files and copy your code
+          rm -rf build_app/www/*
           
-          # Clean up the cordova_app folder inside itself to avoid loops
-          rm -rf cordova_app/www/cordova_app
-          rm -rf cordova_app/www/.github
+          # Copy only relevant web files to avoid recursion errors
+          cp index.html build_app/www/ 2>/dev/null || true
+          cp dashboard.html build_app/www/ 2>/dev/null || true
+          cp admin.html build_app/www/ 2>/dev/null || true
+          cp auth.js build_app/www/ 2>/dev/null || true
+          
+          # If you have folders like 'css' or 'js', copy them too:
+          # cp -r css build_app/www/ 2>/dev/null || true
 
       - name: Build Android Platform
         run: |
-          cd cordova_app
-          cordova platform add android --no-telemetry
+          cd build_app
+          cordova platform add android@12.0.0 --no-telemetry
           cordova build android --debug
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
           name: Village45-APK
-          path: cordova_app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          path: build_app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
           
