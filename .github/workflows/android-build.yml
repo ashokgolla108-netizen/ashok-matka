@@ -4,33 +4,44 @@ on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 11
+      # ✅ FIX: Use JDK 17 instead of 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
       - name: Install Cordova
         run: npm install -g cordova
 
       - name: Create and Build
         run: |
-          # 1. Create a fresh cordova project
+          # Create project
           cordova create village_app com.ashok.village45 Village45
-          
-          # 2. Copy files (Ensure names match exactly)
+
+          # Copy your files
           cp index.html dashboard.html admin.html auth.js village_app/www/
 
-          # 3. Build the APK
+          # Move into project
           cd village_app
-          cordova platform add android@12.0.0 --no-telemetry
+
+          # Add Android platform
+          cordova platform add android
+
+          # Build APK
           cordova build android --debug
 
       - name: Upload APK
@@ -38,4 +49,3 @@ jobs:
         with:
           name: Village45-APK
           path: village_app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          
