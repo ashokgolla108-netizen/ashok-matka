@@ -8,13 +8,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '11' # Changed from 17 to 11 to fix the XmlParser error
           distribution: 'temurin'
 
-      # This is the "magic" step that fixes the SDK errors automatically
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -23,16 +22,13 @@ jobs:
 
       - name: Create and Build
         run: |
-          # 1. Create a fresh cordova project
+          # 1. Create project
           cordova create village_app com.ashok.village45 Village45
           
-          # 2. Copy files into the Cordova 'www' folder
-          cp index.html village_app/www/
-          cp dashboard.html village_app/www/
-          cp admin.html village_app/www/
-          cp auth.js village_app/www/
+          # 2. Copy your files
+          cp index.html dashboard.html admin.html auth.js village_app/www/
 
-          # 3. Build the APK
+          # 3. Build
           cd village_app
           cordova platform add android@12.0.0 --no-telemetry
           cordova build android --debug
