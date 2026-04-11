@@ -101,7 +101,7 @@
     const auth = getAuth(app);
     let UID = null;
     let currentAdminUpi = "";
-    let globalBalance = 0; // Cached to speed up checks
+    let globalBalance = 0; 
 
     setPersistence(auth, browserLocalPersistence);
 
@@ -131,7 +131,6 @@
     });
 
     function startListeners() {
-        // 1. Fetch Settings (UPI & WhatsApp)
         onValue(ref(db, 'settings'), (snap) => {
             const s = snap.val() || {};
             currentAdminUpi = s.adminUpi || "admin@upi";
@@ -139,7 +138,6 @@
             document.getElementById('helpLink').href = `https://wa.me/${s.adminWA || '918328016917'}`;
         });
 
-        // 2. Fetch User Personal Data (Name & Balance)
         onValue(ref(db, `users/${UID}`), (s) => {
             const d = s.val() || {};
             document.getElementById('dispName').innerText = d.name || "User";
@@ -147,7 +145,6 @@
             globalBalance = Number(d.balance || 0);
         });
 
-        // 3. Render Markets Real-time
         onValue(ref(db, 'markets'), (snap) => {
             const live = snap.val() || {};
             const container = document.getElementById('marketList'); 
@@ -202,7 +199,6 @@
             });
         });
 
-        // 4. Load Bet History
         onValue(ref(db, 'bets'), (snap) => {
             const list = document.getElementById('historyList'); list.innerHTML = "<h4>My Bets</h4>";
             if(!snap.exists()) return;
@@ -221,7 +217,6 @@
             });
         });
 
-        // 5. Load Deposit & Withdrawal History
         onValue(ref(db, 'deposits'), (snap) => {
             const list = document.getElementById('myDepHistory'); list.innerHTML = "<h4>Deposit Status</h4>";
             if(!snap.exists()) return;
@@ -243,7 +238,6 @@
         });
     }
 
-    // --- FUNCTION LOGIC ---
     window.submitDeposit = async () => {
         const utr = document.getElementById('depUTR').value.trim();
         const amt = parseInt(document.getElementById('depAmt').value);
