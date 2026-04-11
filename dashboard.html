@@ -41,7 +41,7 @@
 <body>
     <div class="header">
         <div class="user-info">
-            <span id="dispName" style="font-weight: bold; text-transform: uppercase; font-size: 15px;">...</span><br>
+            <span id="dispName" style="font-weight: bold; text-transform: uppercase; font-size: 15px;">LOADING...</span><br>
             <div class="wallet-card">₹<span id="walletBal">0</span></div>
         </div>
         <button class="logout-btn" onclick="logout()">LOGOUT</button>
@@ -101,7 +101,7 @@
     const auth = getAuth(app);
     let UID = null;
     let currentAdminUpi = "";
-    let globalBalance = 0; 
+    let globalBalance = 0;
 
     setPersistence(auth, browserLocalPersistence);
 
@@ -138,9 +138,10 @@
             document.getElementById('helpLink').href = `https://wa.me/${s.adminWA || '918328016917'}`;
         });
 
+        // REINFORCED LOGIC: Fetches user 'name' field from database
         onValue(ref(db, `users/${UID}`), (s) => {
             const d = s.val() || {};
-            document.getElementById('dispName').innerText = d.name || "User";
+            document.getElementById('dispName').innerText = d.name || "Unknown User";
             document.getElementById('walletBal').innerText = d.balance || 0;
             globalBalance = Number(d.balance || 0);
         });
